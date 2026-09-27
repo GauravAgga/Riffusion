@@ -2,7 +2,7 @@
 
 A lightweight, framework-agnostic library for fusing multiple search rankings into a single, better-ranked result list — built for modern hybrid search and RAG systems.
 
-> **Note:** This project is **not** related to the [Riffusion music-generation AI](https://github.com/riffusion/riffusion-hobby). The PyPI package is published as **`rankweave`** to avoid naming conflicts.
+> **Note:** This project is **not** related to the [Riffusion music-generation AI](https://github.com/riffusion/riffusion-hobby). The PyPI package is published as `rankweave` to avoid naming conflicts.
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
@@ -30,6 +30,8 @@ When scores *are* meaningful, **Weighted Score Fusion** combines (optionally min
 ```
 WSF(d) = Σ  w_i · s'_i(d)
 ```
+
+
 
 ## Features
 
@@ -61,6 +63,8 @@ pip install -e ".[dev]"
 
 ## Quick Start
 
+
+
 ### Reciprocal Rank Fusion (RRF)
 
 Fuse BM25 and vector search results when score scales are incompatible and all retrievers should count equally:
@@ -85,6 +89,8 @@ fused = fuse([bm25_results, vector_results], method="rrf", k=60, top_k=10)
 for result in fused:
     print(result.document_id, result.score)
 ```
+
+
 
 ### Weighted Reciprocal Rank Fusion
 
@@ -115,6 +121,8 @@ for result in fused:
     print(result.document_id, result.score)
 ```
 
+
+
 ### Weighted Score Fusion
 
 When retriever scores are meaningful, fuse them with weights (scores are min-max normalized per list by default):
@@ -144,6 +152,8 @@ for result in fused:
     print(result.document_id, result.score)
 ```
 
+
+
 ### Custom document IDs
 
 ```python
@@ -158,21 +168,25 @@ results = fuse(
 )
 ```
 
+
+
 ## API Reference
+
+
 
 ### `fuse(rankings, *, method, id_field, score_field, weights, k, normalize, top_k)`
 
 
-| Parameter     | Default      | Description                                                                                                                |
-| ------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `rankings`    | *(required)* | Iterable of ranked document lists. Order within each list represents rank (best first).                                    |
-| `method`      | `"rrf"`      | Fusion algorithm: `"rrf"`, `"weighted_rrf"`, or `"weighted_score"`.                                                        |
-| `id_field`    | `"id"`       | Field name or callable used to identify documents across lists.                                                            |
-| `score_field` | `None`       | Score field or callable. **Required** for `"weighted_score"`.                                                              |
+| Parameter     | Default      | Description                                                                                                                                          |
+| ------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rankings`    | *(required)* | Iterable of ranked document lists. Order within each list represents rank (best first).                                                              |
+| `method`      | `"rrf"`      | Fusion algorithm: `"rrf"`, `"weighted_rrf"`, or `"weighted_score"`.                                                                                  |
+| `id_field`    | `"id"`       | Field name or callable used to identify documents across lists.                                                                                      |
+| `score_field` | `None`       | Score field or callable. **Required** for `"weighted_score"`.                                                                                        |
 | `weights`     | `None`       | Per-ranking weights. **Required** for `"weighted_rrf"` (`0 < w_i <= 1`, must sum to 1). Optional for `"weighted_score"`. Not supported by plain RRF. |
-| `k`           | `60`         | RRF / weighted RRF smoothing constant.                                                                                     |
-| `normalize`   | `True`       | For `"weighted_score"`: min-max normalize each ranking to `[0, 1]` before weighting. Set `False` for raw weighted CombSUM. |
-| `top_k`       | `None`       | Maximum number of results to return.                                                                                       |
+| `k`           | `60`         | RRF / weighted RRF smoothing constant.                                                                                                               |
+| `normalize`   | `True`       | For `"weighted_score"`: min-max normalize each ranking to `[0, 1]` before weighting. Set `False` for raw weighted CombSUM.                           |
+| `top_k`       | `None`       | Maximum number of results to return.                                                                                                                 |
 
 
 **Returns:** A list of `FusedResult` objects, each with:
@@ -180,6 +194,8 @@ results = fuse(
 - `document` — the original document payload
 - `document_id` — the document identifier
 - `score` — the fused ranking score
+
+
 
 ## Architecture
 
@@ -190,7 +206,11 @@ rankweave/
 └── algorithms/   # Fusion implementations (RRF, weighted RRF, weighted score, …)
 ```
 
+
+
 ## Choosing an Algorithm
+
+
 
 ### Reciprocal Rank Fusion (RRF)
 
@@ -205,6 +225,8 @@ rankweave/
 - When you need to weight one retriever more heavily than another — use weighted RRF
 - When calibrated relevance scores matter more than rank position — use weighted score fusion
 
+
+
 ### Weighted Reciprocal Rank Fusion
 
 **Good fit:**
@@ -216,6 +238,8 @@ rankweave/
 
 - All retrievers should count equally — plain RRF is simpler
 - Raw scores are meaningful and comparable (after optional normalization) — prefer weighted score fusion
+
+
 
 ### Weighted Score Fusion
 
@@ -230,6 +254,8 @@ rankweave/
 - Scores are on wildly different, untrusted scales and ranks are more reliable — prefer RRF or weighted RRF
 - You only have ordered lists without scores
 
+
+
 ## Development
 
 ```bash
@@ -238,6 +264,8 @@ cd Riffusion
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
+
+
 
 ## Contributing
 
@@ -257,12 +285,11 @@ Please open an issue before large changes, and ensure all tests pass before subm
 - [ ] CI with GitHub Actions
 - [ ] Integration examples (LangChain, LlamaIndex)
 
+
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
 
-## Citation
 
-If you use RRF in your work, please cite the original paper:
 
-> Cormack, G. V., Clarke, C. L. A., & Buettcher, S. (2009). *Reciprocal rank fusion outperforms condorcet and individual rank learning methods.* Proceedings of SIGIR '09.
