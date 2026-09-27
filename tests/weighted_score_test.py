@@ -1,6 +1,6 @@
 import pytest
 
-from rankfuse.api.fusion import fuse
+from rankweave.api.fusion import fuse
 
 
 def test_weighted_score_fuses_multiple_rankings():

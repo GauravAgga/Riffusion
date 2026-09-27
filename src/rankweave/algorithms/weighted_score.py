@@ -29,7 +29,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from rankfuse.core.models import FusedResult, RankedDocument
+from rankweave.core.models import FusedResult, RankedDocument
 
 
 class WeightedScoreFusion:
@@ -49,8 +49,8 @@ class WeightedScoreFusion:
 
     Examples
     --------
-    >>> from rankfuse.core.models import RankedDocument
-    >>> from rankfuse.algorithms.weighted_score import WeightedScoreFusion
+    >>> from rankweave.core.models import RankedDocument
+    >>> from rankweave.algorithms.weighted_score import WeightedScoreFusion
     >>>
     >>> bm25 = [
     ...     RankedDocument(document={"text": "doc-a"}, document_id="a", rank=1, score=10.0),
@@ -91,7 +91,7 @@ class WeightedScoreFusion:
         """Combine scored lists into a single list ordered by fused score.
 
         Each inner sequence is one retriever's ranking. Scores are taken from
-        :attr:`~rankfuse.core.models.RankedDocument.score`. Within a single
+        :attr:`~rankweave.core.models.RankedDocument.score`. Within a single
         ranking, each ``document_id`` contributes once (last occurrence wins
         if duplicates appear).
 

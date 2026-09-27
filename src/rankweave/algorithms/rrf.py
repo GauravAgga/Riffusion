@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from rankfuse.core.models import FusedResult, RankedDocument
+from rankweave.core.models import FusedResult, RankedDocument
 
 
 class RRFAlgorithm:
@@ -45,8 +45,8 @@ class RRFAlgorithm:
 
     Examples
     --------
-    >>> from rankfuse.core.models import RankedDocument
-    >>> from rankfuse.algorithms.rrf import RRFAlgorithm
+    >>> from rankweave.core.models import RankedDocument
+    >>> from rankweave.algorithms.rrf import RRFAlgorithm
     >>>
     >>> bm25 = [
     ...     RankedDocument(document={"text": "doc-a"}, document_id="a", rank=1),
@@ -87,7 +87,7 @@ class RRFAlgorithm:
         """Combine ranked lists into a single list ordered by RRF score.
 
         Each inner sequence is one retriever's ranking. Ranks are taken from
-        :attr:`~rankfuse.core.models.RankedDocument.rank` and are expected to
+        :attr:`~rankweave.core.models.RankedDocument.rank` and are expected to
         be 1-based (rank ``1`` is the best result).
 
         Parameters

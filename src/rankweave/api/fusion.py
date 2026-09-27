@@ -2,13 +2,15 @@ from collections.abc import Callable, Iterable, Sequence
 import inspect
 from typing import Any
 
-from rankfuse.algorithms.rrf import RRFAlgorithm
-from rankfuse.algorithms.weighted_score import WeightedScoreFusion
-from rankfuse.core.models import RankedDocument
+from rankweave.algorithms.rrf import RRFAlgorithm
+from rankweave.algorithms.weighted_rrf import WeightedRRF
+from rankweave.algorithms.weighted_score import WeightedScoreFusion
+from rankweave.core.models import RankedDocument
 
 _ALGORITHMS = {
     "rrf": RRFAlgorithm,
     "weighted_score": WeightedScoreFusion,
+    "weighted_rrf": WeightedRRF,
 }
 
 
@@ -34,7 +36,7 @@ def fuse(
 
     method:
         Fusion algorithm to use, e.g. "rrf", "weighted_score",
-        "comb_sum", etc.
+        "weighted_rrf", etc.
 
     id_field:
         Field used to identify a document, or a callable that extracts
@@ -46,11 +48,12 @@ def fuse(
         that operate on scores.
 
     weights:
-        Optional weight for each ranking. Required only by algorithms
-        that support/require weighted fusion.
+        Optional weight for each ranking. Required by "weighted_rrf".
+        Supported (optional) by "weighted_score". Not supported by plain RRF.
 
     k:
-        Algorithm-specific parameter. For RRF, this is the RRF constant.
+        Algorithm-specific parameter. For RRF and weighted RRF, this is the
+        RRF smoothing constant.
 
     normalize:
         Algorithm-specific parameter. For weighted score fusion, controls

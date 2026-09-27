@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rankfuse"
+name = "rankweave"
 version = "0.1.0"
 description = "A lightweight, framework-agnostic library for fusing multiple search rankings in search and RAG systems."
 readme = "README.md"

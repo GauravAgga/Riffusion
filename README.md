@@ -1,13 +1,13 @@
-# Rankfuse
+# RankWeave
 
 A lightweight, framework-agnostic library for fusing multiple search rankings into a single, better-ranked result list — built for modern hybrid search and RAG systems.
 
-> **Note:** This project is **not** related to the [Riffusion music-generation AI](https://github.com/riffusion/riffusion-hobby). The PyPI package is published as `rankfuse` to avoid naming conflicts.
+> **Note:** This project is **not** related to the [Riffusion music-generation AI](https://github.com/riffusion/riffusion-hobby). The PyPI package is published as **`rankweave`** to avoid naming conflicts.
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 
-## Why Rankfuse?
+## Why RankWeave?
 
 Hybrid retrieval pipelines often combine multiple retrievers — for example, BM25 keyword search and dense vector search. Each retriever returns scores on incompatible scales, making direct score combination unreliable.
 
@@ -19,6 +19,12 @@ RRF(d) = Σ  1 / (k + rank_i(d))
 
 Documents that rank highly across multiple retrievers rise to the top. No score normalization required.
 
+**Weighted RRF** keeps the same rank-based approach but applies a per-ranking weight:
+
+```
+WRRF(d) = Σ  w_i / (k + rank_i(d))
+```
+
 When scores *are* meaningful, **Weighted Score Fusion** combines (optionally min-max normalized) scores with per-ranking weights:
 
 ```
@@ -28,18 +34,19 @@ WSF(d) = Σ  w_i · s'_i(d)
 ## Features
 
 - **RRF fusion** — merge rankings from heterogeneous retrievers using rank positions only
+- **Weighted RRF** — same rank-based fusion with required per-list weights
 - **Weighted score fusion** — combine retriever scores with per-list weights and optional min-max normalization
 - **Framework-agnostic** — works with dict payloads from Elasticsearch, OpenSearch, pgvector, LangChain, LlamaIndex, or any custom retriever
 - **Flexible document IDs** — use a field name or a callable extractor
 - **Zero runtime dependencies**
 - **Pluggable architecture** — designed for additional fusion algorithms
 
-**Planned:** weighted RRF and additional score-based fusion variants.
+**Planned:** additional score-based fusion variants.
 
 ## Installation
 
 ```bash
-pip install rankfuse
+pip install rankweave
 ```
 
 For local development:
@@ -56,10 +63,10 @@ pip install -e ".[dev]"
 
 ### Reciprocal Rank Fusion (RRF)
 
-Fuse BM25 and vector search results when score scales are incompatible:
+Fuse BM25 and vector search results when score scales are incompatible and all retrievers should count equally:
 
 ```python
-from rankfuse import fuse
+from rankweave import fuse
 
 bm25_results = [
     {"id": "doc-a", "text": "Introduction to machine learning"},
@@ -79,12 +86,41 @@ for result in fused:
     print(result.document_id, result.score)
 ```
 
+### Weighted Reciprocal Rank Fusion
+
+When ranks are trustworthy but one retriever should count more, use weighted RRF. Weights are **required**, must each satisfy `0 < w_i <= 1`, and must sum to `1`:
+
+```python
+from rankweave import fuse
+
+bm25_results = [
+    {"id": "doc-a", "text": "Introduction to machine learning"},
+    {"id": "doc-b", "text": "Deep learning fundamentals"},
+]
+
+vector_results = [
+    {"id": "doc-b", "text": "Deep learning fundamentals"},
+    {"id": "doc-c", "text": "Transformer architectures"},
+]
+
+fused = fuse(
+    [bm25_results, vector_results],
+    method="weighted_rrf",
+    weights=[0.3, 0.7],
+    k=60,
+    top_k=10,
+)
+
+for result in fused:
+    print(result.document_id, result.score)
+```
+
 ### Weighted Score Fusion
 
 When retriever scores are meaningful, fuse them with weights (scores are min-max normalized per list by default):
 
 ```python
-from rankfuse import fuse
+from rankweave import fuse
 
 bm25_results = [
     {"id": "doc-a", "score": 12.4, "text": "Introduction to machine learning"},
@@ -130,11 +166,11 @@ results = fuse(
 | Parameter     | Default      | Description                                                                                                                |
 | ------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | `rankings`    | *(required)* | Iterable of ranked document lists. Order within each list represents rank (best first).                                    |
-| `method`      | `"rrf"`      | Fusion algorithm: `"rrf"` or `"weighted_score"`.                                                                           |
+| `method`      | `"rrf"`      | Fusion algorithm: `"rrf"`, `"weighted_rrf"`, or `"weighted_score"`.                                                        |
 | `id_field`    | `"id"`       | Field name or callable used to identify documents across lists.                                                            |
 | `score_field` | `None`       | Score field or callable. **Required** for `"weighted_score"`.                                                              |
-| `weights`     | `None`       | Per-ranking weights. Supported by `"weighted_score"` (defaults to equal weights). Not supported by plain RRF.              |
-| `k`           | `60`         | RRF smoothing constant.                                                                                                    |
+| `weights`     | `None`       | Per-ranking weights. **Required** for `"weighted_rrf"` (`0 < w_i <= 1`, must sum to 1). Optional for `"weighted_score"`. Not supported by plain RRF. |
+| `k`           | `60`         | RRF / weighted RRF smoothing constant.                                                                                     |
 | `normalize`   | `True`       | For `"weighted_score"`: min-max normalize each ranking to `[0, 1]` before weighting. Set `False` for raw weighted CombSUM. |
 | `top_k`       | `None`       | Maximum number of results to return.                                                                                       |
 
@@ -148,10 +184,10 @@ results = fuse(
 ## Architecture
 
 ```
-rankfuse/
+rankweave/
 ├── api/          # Public fuse() entry point
 ├── core/         # Data models and FusionAlgorithm protocol
-└── algorithms/   # Fusion implementations (RRF, weighted score, …)
+└── algorithms/   # Fusion implementations (RRF, weighted RRF, weighted score, …)
 ```
 
 ## Choosing an Algorithm
@@ -162,12 +198,24 @@ rankfuse/
 
 - Hybrid search (keyword + semantic) with incompatible score scales
 - Multi-index RAG with different retrievers
-- Ensemble retrieval where you trust ranks more than raw scores
+- Ensemble retrieval where all sources should count equally and you trust ranks more than raw scores
 
 **Not ideal:**
 
-- When you need to weight one retriever more heavily than another (use weighted score fusion, or weighted RRF when available)
-- When calibrated relevance scores matter more than rank position
+- When you need to weight one retriever more heavily than another — use weighted RRF
+- When calibrated relevance scores matter more than rank position — use weighted score fusion
+
+### Weighted Reciprocal Rank Fusion
+
+**Good fit:**
+
+- Same situations as RRF, but one retriever should count more (for example, `weights=[0.3, 0.7]`)
+- You trust ranks more than raw scores, yet still want source emphasis
+
+**Not ideal:**
+
+- All retrievers should count equally — plain RRF is simpler
+- Raw scores are meaningful and comparable (after optional normalization) — prefer weighted score fusion
 
 ### Weighted Score Fusion
 
@@ -179,7 +227,7 @@ rankfuse/
 
 **Not ideal:**
 
-- Scores are on wildly different, untrusted scales and ranks are more reliable — prefer RRF
+- Scores are on wildly different, untrusted scales and ranks are more reliable — prefer RRF or weighted RRF
 - You only have ordered lists without scores
 
 ## Development
@@ -195,8 +243,8 @@ pytest tests/ -v
 
 Contributions are welcome. To add a new fusion algorithm:
 
-1. Implement the `FusionAlgorithm` protocol in `src/rankfuse/core/algorithm.py`
-2. Register it in `src/rankfuse/api/fusion.py`
+1. Implement the `FusionAlgorithm` protocol in `src/rankweave/core/algorithm.py`
+2. Register it in `src/rankweave/api/fusion.py`
 3. Add tests in `tests/`
 
 Please open an issue before large changes, and ensure all tests pass before submitting a pull request.
@@ -205,7 +253,7 @@ Please open an issue before large changes, and ensure all tests pass before subm
 
 - [ ] Publish to PyPI
 - [x] Weighted score fusion
-- [ ] Weighted RRF
+- [x] Weighted RRF
 - [ ] CI with GitHub Actions
 - [ ] Integration examples (LangChain, LlamaIndex)
 
@@ -218,4 +266,3 @@ Licensed under the [Apache License 2.0](LICENSE).
 If you use RRF in your work, please cite the original paper:
 
 > Cormack, G. V., Clarke, C. L. A., & Buettcher, S. (2009). *Reciprocal rank fusion outperforms condorcet and individual rank learning methods.* Proceedings of SIGIR '09.
-
